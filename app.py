@@ -359,7 +359,7 @@ def main():
         # 方式1: SESSION_TOKEN Cookie 登录（默认）
         if SESSION_TOKEN:
             print("🚀 启动浏览器...")
-            sb.open("https://optiklink.net/")
+            sb.open("https://optiklink.net/auth")
             sb.wait_for_ready_state_complete()
             sb.sleep(2)
 
@@ -368,8 +368,8 @@ def main():
                 if value:
                     sb.add_cookie({"name": name, "value": value, "domain": "optiklink.net"})
 
-            print("🌐 访问 https://optiklink.net/a/billings ...")
-            sb.open("https://optiklink.net/a/billings")
+            print("🌐 访问 https://optiklink.net/auth ...")
+            sb.open("https://optiklink.net/auth")
             sb.wait_for_ready_state_complete()
             sb.sleep(3)
             current_url = sb.get_current_url()
@@ -387,8 +387,8 @@ def main():
             _LOGIN_METHOD = "Discord Token"
             print("\n🔄 SESSION_TOKEN 登录失败或未配置，尝试 Discord OAuth 登录...")
             if do_discord_login(sb):
-                print("🌐 访问 https://discord.com/oauth2/authorize?scope=guilds+guilds.join+identify+email&client_id=933437142254887052&redirect_uri=https%3A%2F%2Foptiklink.com%2Flogin&response_type=code&prompt=none ...")
-                sb.open("https://discord.com/oauth2/authorize?scope=guilds+guilds.join+identify+email&client_id=933437142254887052&redirect_uri=https%3A%2F%2Foptiklink.com%2Flogin&response_type=code&prompt=none")
+                print("🌐 访问https://optiklink.net/auth  ...")
+                sb.open("https://optiklink.net/auth")
                 sb.wait_for_ready_state_complete()
                 sb.sleep(3)
                 current_url = sb.get_current_url()
