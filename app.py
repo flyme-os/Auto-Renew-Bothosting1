@@ -169,7 +169,7 @@ def extract_expiry_date(page_source: str) -> str:
     return None
 
 #   Discord OAuth 登录（SESSION_TOKEN 失效时的备用方案）
-DISCORD_CLIENT_ID   = "884382422530158623"
+DISCORD_CLIENT_ID   = "933437142254887052"
 OAUTH_REDIRECT_URI  = "https://optiklink.net/auth"
 OAUTH_SCOPE         = "identify email guilds"
 DISCORD_API         = "https://discord.com/api/v9/oauth2/authorize"
