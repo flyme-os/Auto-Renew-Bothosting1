@@ -8,8 +8,8 @@ from seleniumbase import SB
 
 # 环境变量配置(可以直接私库在双引号里填写)
 EMAIL         = os.environ.get("EMAIL") or ""           # 邮箱,只用于通知使用，可随意填写
-SESSION_TOKEN = os.environ.get("SESSION_TOKEN") or ""   # session token，默认登录方式,非必须
-DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN") or ""   # Discord Token 备用登录方式, 失败时才使用,必须填写
+SESSION_TOKEN = os.environ.get("SESSION_TOKEN") or ""   # session token，备用登录方式,非必须
+DISCORD_TOKEN = os.environ.get("DISCORD_TOKEN") or ""   # Discord Token 主要登录方式, 必须填写
 GH_TOKEN      = os.environ.get("GH_TOKEN") or ""        # GitHub PAT token,用于自动更新session token,可选
 TG_CHAT_ID    = os.environ.get("TG_CHAT_ID") or ""      # TG chat id,不填写不通知，需和bot token一起填写生效
 TG_BOT_TOKEN  = os.environ.get("TG_BOT_TOKEN") or ""    # TG bot token 
@@ -20,8 +20,8 @@ if DISCORD_TOKEN:
     _parts = DISCORD_TOKEN.split(",", 1)
     DC_TOKEN = _parts[-1].strip()
 
-if not SESSION_TOKEN and not DC_TOKEN:
-    print("ℹ️ 未配置 SESSION_TOKEN 和 DISCORD_TOKEN,脚本终止。")
+if not DC_TOKEN and not SESSION_TOKEN:
+    print("ℹ️ 未配置 DISCORD_TOKEN 和 SESSION_TOKEN,脚本终止。")
     sys.exit(1)
 
 # 构造cookie
@@ -32,7 +32,7 @@ COOKIES = {
 }
 
 # 记录本次登录方式（用于通知）
-_LOGIN_METHOD = "SESSION_TOKEN"
+_LOGIN_METHOD = "DISCORD_TOKEN"
 
 # 获取cookie到期时间
 def get_cookie_info(sb, name):
@@ -168,7 +168,7 @@ def extract_expiry_date(page_source: str) -> str:
             return date_str
     return None
 
-#   Discord OAuth 登录（SESSION_TOKEN 失效时的备用方案）
+#   Discord OAuth 登录（主要登录方式）
 DISCORD_CLIENT_ID   = "933437142254887052"
 OAUTH_REDIRECT_URI  = "https://optiklink.net/auth"
 OAUTH_SCOPE         = "identify email guilds"
@@ -356,8 +356,28 @@ def main():
 
         login_ok = False
 
-        # 方式1: SESSION_TOKEN Cookie 登录（默认）
-        if SESSION_TOKEN:
+        # 方式1: Discord OAuth 登录（主要方式）
+        if DC_TOKEN:
+            if do_discord_login(sb):
+                print("🌐 访问 https://optiklink.net/auth ...")
+                sb.open("https://optiklink.net/auth")
+                sb.wait_for_ready_state_complete()
+                sb.sleep(3)
+                current_url = sb.get_current_url()
+                current_title = sb.get_title()
+                print(f"📝 当前URL: {current_url}, Title: {current_title}")
+
+                if "a/billings" in current_url:
+                    login_ok = True
+                    _LOGIN_METHOD = "Discord Token"
+                    print("✅ Discord OAuth 登录成功，当前已到达账单页")
+                else:
+                    print(f"❌ Discord OAuth 登录后仍未到达账单页，当前URL: {current_url}")
+            else:
+                print("❌ Discord OAuth 登录失败")
+
+        # 方式2: SESSION_TOKEN Cookie 登录（备用）
+        if not login_ok and SESSION_TOKEN:
             print("🚀 启动浏览器...")
             sb.open("https://optiklink.net/auth")
             sb.wait_for_ready_state_complete()
@@ -378,42 +398,24 @@ def main():
 
             if "/a/billings" in current_url and "/auth" not in current_url and "error=" not in current_url:
                 login_ok = True
+                _LOGIN_METHOD = "SESSION_TOKEN"
                 print("✅ SESSION_TOKEN 登录成功, 当前已到达账单页")
             else:
                 print(f"❌ SESSION_TOKEN 登录失败，当前URL: {current_url}, 当前标题: {current_title}")
 
-        # 方式2: Discord OAuth 登录（备用）
-        if not login_ok and DC_TOKEN:
-            _LOGIN_METHOD = "Discord Token"
-            print("\n🔄 SESSION_TOKEN 登录失败或未配置，尝试 Discord OAuth 登录...")
-            if do_discord_login(sb):
-                print("🌐 访问https://optiklink.net/auth  ...")
-                sb.open("https://optiklink.net/auth")
-                sb.wait_for_ready_state_complete()
-                sb.sleep(3)
-                current_url = sb.get_current_url()
-                current_title = sb.get_title()
-                print(f"📝 当前URL: {current_url}, Title: {current_title}")
-
-                if "a/billings" in current_url:
-                    login_ok = True
-                    print("✅ Discord OAuth 登录成功,当前已到达账单页")
-                else:
-                    print(f"❌ Discord OAuth 登录后仍未到达账单页，当前URL: {current_url}")
-            else:
-                print("❌ Discord OAuth 登录失败")
-
         if not login_ok:
-            error_msg = "Cookie 已失效或页面异常"
-            if not SESSION_TOKEN and DC_TOKEN:
+            error_msg = "登录失败"
+            if not DC_TOKEN and SESSION_TOKEN:
+                error_msg = "SESSION_TOKEN 登录失败"
+            elif DC_TOKEN and not SESSION_TOKEN:
                 error_msg = "Discord OAuth 登录失败"
-            elif SESSION_TOKEN and DC_TOKEN:
-                error_msg = "SESSION_TOKEN 和 Discord OAuth 均失败"
+            elif DC_TOKEN and SESSION_TOKEN:
+                error_msg = "Discord OAuth 和 SESSION_TOKEN 均失败"
             send_telegram_message(format_notification("❌ 登录失败", error=error_msg))
             return
 
         if _LOGIN_METHOD == "Discord Token":
-            print("ℹ️ 本次使用 Discord OAuth 登录，新的 SESSION_TOKEN 将自动更新到 Secrets")
+            print("ℹ️ 本次使用 Discord Token 登录，新的 SESSION_TOKEN 将自动更新到 Secrets")
 
         # 提取当前到期日期和倒计时信息
         sb.sleep(2)
