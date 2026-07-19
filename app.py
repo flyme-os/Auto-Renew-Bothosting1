@@ -170,7 +170,7 @@ def extract_expiry_date(page_source: str) -> str:
 
 #   Discord OAuth 登录（主要登录方式）
 DISCORD_CLIENT_ID   = "933437142254887052"
-OAUTH_REDIRECT_URI  = "https://optiklink.net/auth"
+OAUTH_REDIRECT_URI  = "https://optiklink.net/login"
 OAUTH_SCOPE         = "identify email guilds"
 DISCORD_API         = "https://discord.com/api/v9/oauth2/authorize"
 DISCORD_UA = (
