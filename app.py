@@ -170,7 +170,7 @@ def extract_expiry_date(page_source: str) -> str:
 
 #   Discord OAuth 登录（主要登录方式）
 DISCORD_CLIENT_ID   = "933437142254887052"
-OAUTH_REDIRECT_URI  = "https://optiklink.com/login"
+OAUTH_REDIRECT_URI  = "https://optiklink.com/auth"
 OAUTH_SCOPE         = "identify email"
 DISCORD_API         = "https://discord.com/oauth2/authorize"
 DISCORD_UA = (
@@ -376,7 +376,7 @@ def discord_authorize(state: str) -> str:
 
 
 def do_discord_login(sb) -> bool:
-    """通过 Discord Token 走完整 OAuth 流程登录 optiklink.net"""
+    """通过 Discord Token 走完整 OAuth 流程登录 optiklink.com"""
     print("\n🔑 通过 Discord Token 登录...")
 
     state = capture_discord_state(sb)
@@ -399,8 +399,8 @@ def do_discord_login(sb) -> bool:
         sb.save_screenshot("login_banned.png")
         return False
 
-    if "optiklink.net" not in url:
-        print(f"❌ 回调后未跳转至 optiklink.net，当前 URL：{url}")
+    if "optiklink.com" not in url:
+        print(f"❌ 回调后未跳转至 optiklink.com，当前 URL：{url}")
         sb.save_screenshot("login_no_redirect.png")
         return False
 
@@ -416,7 +416,7 @@ def do_discord_login(sb) -> bool:
     for _ in range(30):
         url = sb.get_current_url()
         path = urllib.parse.urlparse(url).path
-        if "optiklink.net" in url and path != "/auth" and not path.startswith("/auth/discord"):
+        if "optiklink.com" in url and path != "/auth" and not path.startswith("/auth/discord"):
             print(f"✅ Discord OAuth 登录成功！当前页面：{url}")
             return True
         time.sleep(0.5)
