@@ -182,7 +182,7 @@ STATE_RE = re.compile(r"[?&]state=([^&]+)")
 
 def capture_discord_state(sb) -> str:
     """打开 /auth/discord，从落地页 URL 里提取本次会话的 state"""
-    print("🔎 获取 Discord OAuth state...")
+    print("🔎 查找 Sign in with Discord 登录按钮...")
     sb.uc_open_with_reconnect("https://optiklink.net/auth", reconnect_time=4)
     time.sleep(2)
 
@@ -360,14 +360,13 @@ def main():
         if DC_TOKEN:
             if do_discord_login(sb):
                 print("🔐 开始 Discord OAuth 登录")
-                sb.open("https://optiklink.net/auth")
                 sb.wait_for_ready_state_complete()
                 sb.sleep(3)
                 current_url = sb.get_current_url()
                 current_title = sb.get_title()
                 print(f"📝 当前URL: {current_url}, Title: {current_title}")
 
-                if "a/billings" in current_url:
+                if "https://optiklink.net" in current_url:
                     login_ok = True
                     _LOGIN_METHOD = "Discord Token"
                     print("✅ Discord OAuth 登录成功，当前已到达账单页")
