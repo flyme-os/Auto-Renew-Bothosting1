@@ -181,24 +181,128 @@ STATE_RE = re.compile(r"[?&]state=([^&]+)")
 
 
 def capture_discord_state(sb) -> str:
-    """打开 /auth/discord，从落地页 URL 里提取本次会话的 state"""
-    print("🔎 查找 Discord 登录按钮...")
-    sb.uc_open_with_reconnect("https://optiklink.net/auth", reconnect_time=4)
-    time.sleep(2)
+    """
+    打开 Optiklink 登录页
+    点击 Sign in with DISCORD
+    获取 Discord OAuth URL/state
+    """
 
-    url = sb.get_current_url()
-    if "discord.com" not in url:
-        print(f"⚠️ 未跳转到 Discord 相关页面，当前 URL：{url}")
+    print("🔎 打开 Optiklink 登录页面...")
+
+
+    sb.uc_open_with_reconnect(
+        "https://optiklink.com/auth",
+        reconnect_time=5
+    )
+
+    sb.wait_for_ready_state_complete()
+    time.sleep(3)
+
+
+    print("🔍 查找 Sign in with DISCORD 按钮...")
+
+
+    selectors = [
+        "text=Sign in with DISCORD",
+        "text=Sign in with Discord",
+        "button",
+        "a"
+    ]
+
+
+    clicked = False
+
+
+    for selector in selectors:
+
+        try:
+
+            if sb.is_element_visible(selector):
+
+                print(
+                    f"✅ 点击按钮: {selector}"
+                )
+
+                sb.click(selector)
+
+                clicked = True
+
+                break
+
+        except Exception:
+            continue
+
+
+
+    if not clicked:
+
+        print("❌ 没有找到 Discord 登录按钮")
+
+        sb.save_screenshot(
+            "discord_button_error.png"
+        )
+
         return ""
 
-    m = STATE_RE.search(url)
-    if not m:
-        print(f"❌ 未能从 URL 中解析出 state，当前 URL：{url}")
-        return ""
 
-    state = urllib.parse.unquote(m.group(1))
-    print(f"✅ 已捕获 state（当前落地页：{urllib.parse.urlparse(url).path}）")
-    return state
+
+    print("⏳ 等待跳转 Discord OAuth...")
+
+
+    for i in range(30):
+
+        time.sleep(1)
+
+        url = sb.get_current_url()
+
+        print(
+            f"{i+1}s 当前URL: {url}"
+        )
+
+
+        if "discord.com/oauth2/authorize" in url:
+
+            print(
+                "✅ 已进入 Discord OAuth"
+            )
+
+
+            m = STATE_RE.search(url)
+
+
+            if m:
+
+                state = urllib.parse.unquote(
+                    m.group(1)
+                )
+
+                print(
+                    "✅ 获取 state 成功"
+                )
+
+                return state
+
+
+            else:
+
+                print(
+                    "⚠️ OAuth URL 没有 state"
+                )
+
+                return url
+
+
+
+    print(
+        "❌ 等待 Discord OAuth 超时"
+    )
+
+
+    sb.save_screenshot(
+        "discord_redirect_error.png"
+    )
+
+    return ""
 
 
 def discord_authorize(state: str) -> str:
