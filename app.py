@@ -359,7 +359,7 @@ def main():
         # 方式1: Discord OAuth 登录（主要方式）
         if DC_TOKEN:
             if do_discord_login(sb):
-                print("🌐 访问 https://optiklink.net/auth ...")
+                print("🔐 开始 Discord OAuth 登录")
                 sb.open("https://optiklink.net/auth")
                 sb.wait_for_ready_state_complete()
                 sb.sleep(3)
